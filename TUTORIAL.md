@@ -1,126 +1,122 @@
-# Windows API Tutorial
+# Step-by-Step Tutorial: Creating a Windows C++ App with WinAppCLI
 
-This tutorial explains the key concepts and code patterns used in Windows applications created with winappCLI.
+This tutorial walks you through creating a complete Windows C++ application using Microsoft's WinAppCLI tool and CMake.
 
 ## Table of Contents
 
-1. [Win32 API Overview](#win32-api-overview)
-2. [Application Entry Point](#application-entry-point)
-3. [Window Classes](#window-classes)
-4. [Creating a Window](#creating-a-window)
-5. [Message Loop](#message-loop)
-6. [Window Procedure](#window-procedure)
-7. [Common Messages](#common-messages)
-8. [Next Steps](#next-steps)
+1. [Environment Setup](#environment-setup)
+2. [Project Initialization](#project-initialization)
+3. [Creating the C++ Application](#creating-the-c-application)
+4. [Building the Project](#building-the-project)
+5. [Running and Debugging](#running-and-debugging)
+6. [Advanced Features](#advanced-features)
 
-## Win32 API Overview
+## Environment Setup
 
-The Win32 API is the core set of Windows APIs for creating desktop applications. It provides:
-- Window management
-- Message handling
-- Graphics and drawing
-- User input processing
-- File and system operations
+### Install Required Tools
 
-All Windows applications, regardless of which framework they use, ultimately rely on Win32 APIs.
+#### 1. Install WinAppCLI
 
-## Application Entry Point
-
-### wWinMain Function
-
-```cpp
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
-                    PWSTR pCmdLine, int nCmdShow)
+Using winget (recommended):
+```bash
+winget install Microsoft.winappcli --source winget
 ```
 
-This is the entry point for Windows GUI applications:
-- **hInstance**: Handle to the current instance of the application
-- **hPrevInstance**: Always NULL (legacy parameter)
-- **pCmdLine**: Command-line arguments as a Unicode string
-- **nCmdShow**: How the window should be displayed (maximized, minimized, etc.)
+Or download from GitHub releases:
+https://github.com/microsoft/WinAppCli/releases
 
-### Why wWinMain instead of main?
-
-- `wWinMain` is for GUI applications (no console window)
-- The 'w' prefix indicates Unicode support
-- Console applications use `wmain` or `main`
-
-## Window Classes
-
-Before creating a window, you must register a window class:
-
-```cpp
-WNDCLASS wc = { };
-wc.lpfnWndProc   = WindowProc;      // Window procedure function
-wc.hInstance     = hInstance;        // Application instance
-wc.lpszClassName = CLASS_NAME;       // Class name
-wc.hCursor       = LoadCursor(NULL, IDC_ARROW);  // Cursor
-wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);   // Background color
-
-RegisterClass(&wc);
+Verify installation:
+```bash
+winapp --version
 ```
 
-### Key WNDCLASS Members:
-- **lpfnWndProc**: Pointer to the window procedure that handles messages
-- **hInstance**: Application instance handle
-- **lpszClassName**: Unique name for this window class
-- **hCursor**: Default cursor for the window
-- **hbrBackground**: Background color brush
+#### 2. Install CMake
 
-## Creating a Window
-
-```cpp
-HWND hwnd = CreateWindowEx(
-    0,                          // Extended window style
-    CLASS_NAME,                 // Window class name
-    L"My App",                  // Window title
-    WS_OVERLAPPEDWINDOW,        // Window style
-    CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,  // Position and size
-    NULL,                       // Parent window
-    NULL,                       // Menu
-    hInstance,                  // Instance handle
-    NULL                        // Additional data
-);
+```bash
+winget install Kitware.CMake
 ```
 
-### Window Styles:
-- **WS_OVERLAPPEDWINDOW**: Standard window with title bar, borders, and buttons
-- **WS_POPUP**: Window with no border or title bar
-- **WS_CHILD**: Child window (must have parent)
+Or download from: https://cmake.org/download/
 
-### Displaying the Window:
+#### 3. Install C++ Build Tools
 
-```cpp
-ShowWindow(hwnd, nCmdShow);  // Make window visible
-UpdateWindow(hwnd);          // Send WM_PAINT message
+Option A: Visual Studio (recommended)
+- Download Visual Studio Community 2022 (free)
+- During installation, select "Desktop development with C++"
+- This includes Windows SDK and MSVC compiler
+
+Option B: Build Tools for Visual Studio
+- Download from: https://visualstudio.microsoft.com/downloads/
+- Select "Build Tools for Visual Studio"
+- Install "C++ build tools" workload
+
+## Project Initialization
+
+### Step 1: Create Project Directory
+
+```bash
+mkdir HelloWindowsApp
+cd HelloWindowsApp
 ```
 
-## Message Loop
+### Step 2: Initialize with WinAppCLI
 
-The message loop is the heart of every Windows application:
+Run the initialization command:
 
-```cpp
-MSG msg = { };
-while (GetMessage(&msg, NULL, 0, 0))
-{
-    TranslateMessage(&msg);  // Translate virtual-key messages
-    DispatchMessage(&msg);   // Send message to window procedure
-}
+```bash
+winapp init
 ```
 
-### How It Works:
-1. **GetMessage**: Retrieves a message from the message queue
-2. **TranslateMessage**: Converts keyboard input to character messages
-3. **DispatchMessage**: Sends the message to the window procedure
-4. Returns when GetMessage receives WM_QUIT
+You'll be prompted for:
+- **App Name**: Enter "HelloWindowsApp"
+- **Publisher**: Enter your publisher name (e.g., "CN=YourName")
+- **Version**: Keep default "1.0.0.0"
+- **Target Framework**: Select "C++" or "Native C++"
+- **Package Identity**: Confirm to create one
 
-## Window Procedure
+This creates:
+- `AppxManifest.xml` - App package manifest
+- `Assets/` directory - App icons and splash screens
+- Development certificate for signing
+- SDK package references
 
-The window procedure processes all messages sent to the window:
+### Step 3: Verify Generated Files
+
+```bash
+ls -la
+```
+
+You should see:
+```
+HelloWindowsApp/
+├── AppxManifest.xml
+├── Assets/
+│   ├── Square150x150Logo.png
+│   ├── Square44x44Logo.png
+│   ├── SplashScreen.png
+│   └── ...
+└── (certificate files)
+```
+
+## Creating the C++ Application
+
+### Step 1: Create Source Directory
+
+```bash
+mkdir src
+mkdir include
+```
+
+### Step 2: Create main.cpp
+
+Create `src/main.cpp`:
 
 ```cpp
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, 
-                            WPARAM wParam, LPARAM lParam)
+#include <windows.h>
+#include <string>
+
+// Window procedure
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -129,236 +125,323 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg,
         return 0;
         
     case WM_PAINT:
-        // Handle painting
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            
+            // Draw text
+            const wchar_t* text = L"Hello from WinAppCLI!";
+            TextOut(hdc, 10, 10, text, wcslen(text));
+            
+            EndPaint(hwnd, &ps);
+        }
         return 0;
     }
     
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
-```
 
-### Parameters:
-- **hwnd**: Handle to the window
-- **uMsg**: Message identifier (WM_PAINT, WM_DESTROY, etc.)
-- **wParam**: Additional message data (varies by message)
-- **lParam**: Additional message data (varies by message)
-
-### Important:
-Always call `DefWindowProc` for messages you don't handle!
-
-## Common Messages
-
-### WM_DESTROY
-Sent when a window is being destroyed:
-```cpp
-case WM_DESTROY:
-    PostQuitMessage(0);  // Exit the message loop
-    return 0;
-```
-
-### WM_PAINT
-Sent when the window needs to be redrawn:
-```cpp
-case WM_PAINT:
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                    PWSTR pCmdLine, int nCmdShow)
 {
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hwnd, &ps);
+    // Register window class
+    const wchar_t CLASS_NAME[] = L"HelloWindowClass";
     
-    // Drawing code here
-    TextOut(hdc, 10, 10, L"Hello!", 6);
+    WNDCLASS wc = { };
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = CLASS_NAME;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     
-    EndPaint(hwnd, &ps);
-    return 0;
-}
-```
-
-### WM_SIZE
-Sent when window size changes:
-```cpp
-case WM_SIZE:
-{
-    int width = LOWORD(lParam);
-    int height = HIWORD(lParam);
-    // Adjust layout based on new size
-    return 0;
-}
-```
-
-### WM_COMMAND
-Sent when user interacts with menus or buttons:
-```cpp
-case WM_COMMAND:
-{
-    int wmId = LOWORD(wParam);
-    switch (wmId)
+    if (!RegisterClass(&wc))
     {
-    case IDM_EXIT:
-        DestroyWindow(hwnd);
-        break;
+        MessageBox(NULL, L"Window Registration Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
     }
-    return 0;
-}
-```
-
-### WM_LBUTTONDOWN
-Sent when left mouse button is pressed:
-```cpp
-case WM_LBUTTONDOWN:
-{
-    int x = LOWORD(lParam);
-    int y = HIWORD(lParam);
-    // Handle mouse click at (x, y)
-    return 0;
-}
-```
-
-### WM_KEYDOWN
-Sent when a key is pressed:
-```cpp
-case WM_KEYDOWN:
-{
-    switch (wParam)
+    
+    // Create window
+    HWND hwnd = CreateWindowEx(
+        0,
+        CLASS_NAME,
+        L"Hello Windows App",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        NULL,
+        NULL,
+        hInstance,
+        NULL
+    );
+    
+    if (hwnd == NULL)
     {
-    case VK_ESCAPE:
-        PostQuitMessage(0);
-        break;
+        MessageBox(NULL, L"Window Creation Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
     }
-    return 0;
-}
-```
-
-## Drawing and Graphics
-
-### Device Context (HDC)
-A device context is a handle that allows you to draw:
-
-```cpp
-HDC hdc = BeginPaint(hwnd, &ps);
-
-// Drawing functions
-TextOut(hdc, x, y, text, length);
-Rectangle(hdc, left, top, right, bottom);
-Ellipse(hdc, left, top, right, bottom);
-LineTo(hdc, x, y);
-
-EndPaint(hwnd, &ps);
-```
-
-### Colors and Brushes
-```cpp
-// Create colored brush
-HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));  // Red
-SelectObject(hdc, hBrush);
-
-// Draw filled rectangle with brush
-Rectangle(hdc, 10, 10, 100, 100);
-
-DeleteObject(hBrush);
-```
-
-## Common Patterns
-
-### Creating Controls (Buttons, Edit boxes, etc.)
-
-```cpp
-case WM_CREATE:
-{
-    // Create a button
-    CreateWindow(
-        L"BUTTON",              // Control class
-        L"Click Me",            // Text
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        10, 10, 100, 30,        // Position and size
-        hwnd,                   // Parent
-        (HMENU)ID_BUTTON,       // Control ID
-        (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE),
-        NULL);
-    return 0;
-}
-```
-
-### Message Boxes
-
-```cpp
-int result = MessageBox(
-    hwnd,                       // Parent window
-    L"Do you want to quit?",    // Message
-    L"Confirmation",            // Title
-    MB_YESNO | MB_ICONQUESTION  // Buttons and icon
-);
-
-if (result == IDYES)
-{
-    // User clicked Yes
-}
-```
-
-### Timers
-
-```cpp
-// Set a timer (ID 1, 1000ms interval)
-SetTimer(hwnd, 1, 1000, NULL);
-
-// Handle timer messages
-case WM_TIMER:
-{
-    if (wParam == 1)
+    
+    ShowWindow(hwnd, nCmdShow);
+    UpdateWindow(hwnd);
+    
+    // Message loop
+    MSG msg = { };
+    while (GetMessage(&msg, NULL, 0, 0))
     {
-        // Timer fired
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
-    return 0;
+    
+    return (int)msg.wParam;
 }
-
-// Kill timer when done
-KillTimer(hwnd, 1);
 ```
 
-## Best Practices
+### Step 3: Create CMakeLists.txt
 
-1. **Always call DefWindowProc** for unhandled messages
-2. **Release resources**: Delete brushes, pens, fonts when done
-3. **Use Unicode**: Prefer wide strings (L"text") and Unicode APIs
-4. **Check return values**: Many Win32 functions return NULL/FALSE on error
-5. **Handle WM_DESTROY**: Always call PostQuitMessage(0)
-6. **Validate window handles**: Check if CreateWindowEx returned NULL
+Create `CMakeLists.txt` in the project root:
 
-## Error Handling
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(HelloWindowsApp)
 
-```cpp
-HWND hwnd = CreateWindowEx(...);
-if (hwnd == NULL)
-{
-    DWORD error = GetLastError();
-    // Handle error
-    return 1;
-}
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Collect source files
+file(GLOB SOURCES "src/*.cpp")
+file(GLOB HEADERS "include/*.h")
+
+# Create executable
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS})
+
+# Link Windows libraries
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    user32 
+    gdi32
+)
+
+# Include directories
+target_include_directories(${PROJECT_NAME} PRIVATE include)
+
+# Set output directory
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+```
+
+### Step 4: Create Project README
+
+Create `PROJECT_README.md`:
+
+```markdown
+# Hello Windows App
+
+A simple Windows application created with WinAppCLI and CMake.
+
+## Building
+
+1. Generate build files:
+   ```bash
+   mkdir build && cd build
+   cmake ..
+   ```
+
+2. Build the project:
+   ```bash
+   cmake --build .
+   ```
+
+3. Run the application:
+   ```bash
+   ./bin/Debug/HelloWindowsApp.exe
+   ```
+
+## Features
+
+- Basic Windows window with title bar
+- Custom window procedure
+- Message loop for event handling
+- Initialized with WinAppCLI for package identity
+```
+
+## Building the Project
+
+### Step 1: Generate Build Files
+
+Open "Developer Command Prompt for VS" or a regular terminal:
+
+```bash
+mkdir build
+cd build
+cmake ..
+```
+
+For MinGW:
+```bash
+cmake -G "MinGW Makefiles" ..
+```
+
+### Step 2: Build the Application
+
+```bash
+cmake --build .
+```
+
+Or specify configuration:
+```bash
+cmake --build . --config Release
+```
+
+### Step 3: Verify Build Output
+
+```bash
+ls bin/Debug/
+```
+
+You should see `HelloWindowsApp.exe`.
+
+## Running and Debugging
+
+### Option 1: Run Directly
+
+```bash
+./bin/Debug/HelloWindowsApp.exe
+```
+
+### Option 2: Run with Package Identity
+
+Use WinAppCLI to inject package identity for debugging:
+
+```bash
+cd ..
+winapp create-debug-identity build/bin/Debug/HelloWindowsApp.exe
+```
+
+This allows your app to:
+- Use Windows APIs that require package identity
+- Access system features requiring permissions
+- Test packaging behavior
+
+### Debugging Tips
+
+1. **Check WinAppCLI logs**:
+   ```bash
+   winapp logs
+   ```
+
+2. **Verify certificate**:
+   ```bash
+   winapp certificate list
+   ```
+
+3. **Update manifest**:
+   ```bash
+   winapp manifest update
+   ```
+
+## Advanced Features
+
+### Adding Windows App SDK
+
+To use modern Windows APIs:
+
+1. Update CMakeLists.txt:
+   ```cmake
+   find_package(WindowsAppSDK REQUIRED)
+   target_link_libraries(${PROJECT_NAME} PRIVATE WindowsAppSDK::WindowsAppSDK)
+   ```
+
+2. Install SDK packages:
+   ```bash
+   winapp restore
+   ```
+
+### Using WinUI 3
+
+For modern UI controls:
+
+1. Initialize with WinUI support:
+   ```bash
+   winapp init --framework WinUI3
+   ```
+
+2. Add WinUI references to CMakeLists.txt
+
+### Packaging for Distribution
+
+1. Update manifest with your details:
+   ```bash
+   winapp manifest update
+   ```
+
+2. Build release version:
+   ```bash
+   cmake --build build --config Release
+   ```
+
+3. Create MSIX package:
+   ```bash
+   winapp package create
+   ```
+
+### CI/CD Integration
+
+For GitHub Actions:
+
+```yaml
+- name: Install WinAppCLI
+  run: winget install Microsoft.winappcli
+
+- name: Restore environment
+  run: winapp restore
+
+- name: Build
+  run: |
+    cmake -B build
+    cmake --build build
+```
+
+## Troubleshooting
+
+### Problem: winapp command not found
+
+**Solution**: Ensure WinAppCLI is installed and in PATH:
+```bash
+winget install Microsoft.winappcli --source winget
+```
+Restart your terminal after installation.
+
+### Problem: Certificate errors
+
+**Solution**: Regenerate certificate:
+```bash
+winapp certificate create --force
+```
+
+### Problem: CMake can't find Windows SDK
+
+**Solution**: Install Windows SDK:
+- Via Visual Studio Installer
+- Or standalone: https://developer.microsoft.com/windows/downloads/windows-sdk/
+
+### Problem: Build fails with "WindowsApp" not found
+
+**Solution**: Make sure you have Windows App SDK installed:
+```bash
+winapp restore
 ```
 
 ## Next Steps
 
-1. **Add controls**: Buttons, text boxes, list boxes
-2. **Create menus**: LoadMenu, SetMenu
-3. **Handle dialogs**: DialogBox, CreateDialog
-4. **Add icons**: LoadIcon, SetClassLong
-5. **Use resources**: RC files for icons, menus, dialogs
-6. **Advanced graphics**: GDI+, Direct2D
-7. **Multithreading**: CreateThread, synchronization
+1. **Add UI Controls**: Buttons, text boxes, menus
+2. **Implement Features**: File I/O, networking, databases
+3. **Use Windows APIs**: Notifications, file pickers, etc.
+4. **Package and Deploy**: Create MSIX package for distribution
+5. **Publish to Store**: Submit to Microsoft Store
 
 ## Resources
 
-- [Microsoft Win32 Documentation](https://docs.microsoft.com/en-us/windows/win32/)
-- [Windows API Index](https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list)
-- [Programming Windows by Charles Petzold](http://www.charlespetzold.com/pw5/) (classic book)
-- [Win32 Programming Tutorial](https://www.winprog.org/tutorial/)
+- [WinAppCLI Documentation](https://github.com/microsoft/WinAppCli)
+- [Windows App SDK](https://docs.microsoft.com/windows/apps/windows-app-sdk/)
+- [CMake Documentation](https://cmake.org/documentation/)
+- [Win32 API Reference](https://docs.microsoft.com/windows/win32/)
 
-## Example Projects to Build
-
-Start simple and gradually increase complexity:
-
-1. **Hello World**: Display text in a window ✓ (already done!)
-2. **Calculator**: Simple arithmetic with buttons
-3. **Notepad Clone**: Text editor with file operations
-4. **Drawing Program**: Paint-like application
-5. **Game**: Simple 2D game using Win32 and GDI
-
-Happy Windows programming!
+Happy coding!

@@ -45,14 +45,22 @@ build/
 Build/
 BUILD/
 
-# CMake files
+# CMake files (but keep CMakeLists.txt)
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-*.cmake
+Makefile
+!CMakeLists.txt
 
 # IDE files
 .vscode/
 .vs/
 *.vcxproj*
 *.sln
+
+# WinAppCLI generated files (keep for reference in examples)
+# Uncomment if you don't want to track these:
+# AppxManifest.xml
+# Assets/
+# *.pfx
+# *.cer
