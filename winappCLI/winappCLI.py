@@ -98,7 +98,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     
-    RegisterClass(&wc);
+    if (!RegisterClass(&wc))
+    {{
+        MessageBox(NULL, L"Window Registration Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }}
     
     // Create the window
     HWND hwnd = CreateWindowEx(
@@ -118,6 +122,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     
     if (hwnd == NULL)
     {{
+        MessageBox(NULL, L"Window Creation Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }}
     
@@ -163,8 +168,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }}
 """
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except IOError as e:
+            print(f"Error: Failed to create {filepath}: {e}")
+            raise
     
     def _create_cmake_file(self, filepath, project_name):
         """Create the CMakeLists.txt file."""
@@ -189,8 +198,12 @@ set_target_properties(${{PROJECT_NAME}} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${{CMAKE_BINARY_DIR}}/bin"
 )
 """
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except IOError as e:
+            print(f"Error: Failed to create {filepath}: {e}")
+            raise
     
     def _create_readme(self, filepath, project_name):
         """Create the README.md file."""
@@ -254,8 +267,12 @@ Extend this application by:
 - Implementing custom window procedures
 - Adding application-specific functionality
 """
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except IOError as e:
+            print(f"Error: Failed to create {filepath}: {e}")
+            raise
 
 
 def main():
