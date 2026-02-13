@@ -76,6 +76,16 @@ winapp-cpp-tutorial/
 └── LICENSE             # License information
 ```
 
+## Documentation
+
+- **[Quick Start Guide](QUICKSTART.md)** - Step-by-step guide for beginners
+- **[Tutorial](TUTORIAL.md)** - Learn Win32 API concepts and patterns
+- **[winappCLI README](winappCLI/README.md)** - Detailed tool documentation
+
+## Examples
+
+Check out the [examples/SampleApp](examples/SampleApp) directory for a complete working example created with winappCLI.
+
 ## Additional Resources
 
 - [Win32 API Documentation](https://docs.microsoft.com/en-us/windows/win32/)
