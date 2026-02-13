@@ -39,3 +39,20 @@
 
 # debug information files
 *.dwo
+
+# Build directories
+build/
+Build/
+BUILD/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+
+# IDE files
+.vscode/
+.vs/
+*.vcxproj*
+*.sln
