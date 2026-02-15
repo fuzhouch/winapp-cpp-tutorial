@@ -1,0 +1,16 @@
+// This is required for compiling IDL files
+// from command line, or midl.exe will complain
+// error like "IInspectable is not undefined".
+// See https://learn.microsoft.com/en-us/uwp/midl-3/troubleshooting
+import "Windows.Foundation.idl";
+import "Windows.Foundation.Metadata.idl";
+
+namespace WinAppTutorial
+{
+    [default_interface]
+    runtimeclass Calculator
+    {
+        Calculator();
+        Int32 Add(Int32 a, Int32 b);
+    }
+}
