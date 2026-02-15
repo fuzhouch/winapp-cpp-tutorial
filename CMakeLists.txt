@@ -48,6 +48,8 @@ if(MSVC)
 
     # Optional: If you want to use precompiled headers for faster builds later
     # target_precompile_headers(winapp-cpp-tutorial PRIVATE "${WINAPP_ROOT}/include/winrt/Windows.Foundation.h")
+else()
+    message(FATAL_ERROR "Non MSVC compiler is unsupported.")
 endif()
 
 # Link Libraries
