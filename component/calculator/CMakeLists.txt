@@ -53,14 +53,28 @@ add_custom_command(
 )
 
 # Create the WinRT component as a shared library
+# Don't add ${MIDL_FILE} here, or VS build target
+# will fail because it tries to add a force step
+# to compile Calculator.idl as traditional COM idl.
 add_library(${COMPONENT_NAME} SHARED
     "pch.h"
     "pch.cpp"
-    "${IDL_FILE}"
     "${WINMD_FILE}"
     ${CPPWINRT_GENERATED_MODULE_CPP}
     Calculator.cpp
     Calculator.def
+)
+
+# Set target properties
+# Though sounds strange, but VS_WINRT_COMPONENT
+# must be set to FALSE. This is because CMake
+# assumes that the target is an outdated, C++/CX
+# based WinRT component. Thus, it always set /ZW
+# option, which causes a conflict when using C++20.
+set_target_properties(${COMPONENT_NAME} PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    VS_WINRT_COMPONENT FALSE
 )
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -71,13 +85,6 @@ add_custom_target(GenerateCalculatorFiles
 )
 
 add_dependencies(${COMPONENT_NAME} GenerateCalculatorFiles)
-
-# Set target properties
-set_target_properties(${COMPONENT_NAME} PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED ON
-    VS_WINRT_COMPONENT TRUE
-)
 
 # Set up precompiled headers
 target_precompile_headers(${COMPONENT_NAME} PRIVATE "pch.h")

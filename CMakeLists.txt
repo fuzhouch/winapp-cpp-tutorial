@@ -6,10 +6,6 @@ project(winapp-cpp-tutorial LANGUAGES CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# Configure C++ Standard
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 # Add component subdirectories
 add_subdirectory(component/calculator)
 
@@ -46,8 +42,18 @@ add_custom_command(
 
 # Define the executable
 add_executable(${PROJECT_NAME} main.cpp "${GENERATED_HEADER}" "app.manifest")
+# Though sounds strange, but VS_WINRT_COMPONENT
+# must be set to FALSE. This is because CMake
+# assumes that the target is an outdated, C++/CX
+# based WinRT component. Thus, it always set /ZW
+# option, which causes a conflict when using C++20.
+#
+# The C++/WinRT binding does not need /ZW build
+# option anymore.
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_WINRT_COMPONENT TRUE
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    VS_WINRT_COMPONENT FALSE
     WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 # Add dependency on Calculator to ensure WinRT files are generated before main compilation

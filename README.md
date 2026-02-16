@@ -25,8 +25,10 @@ Learn how to develop Windows app with winappCLI and vibe coding!
 
 2. Build with CMake:
    ```powershell
-   cmake -S . -B build
-   cmake --build build
+   cmake -S . -B build # This is the default settings with VS 2022, or...
+   cmake -G "NMake Makefiles" -B build # Or, you can use nmake for building.
+
+   cmake --build build --config Release
    ```
 
 ## Configure App Package
