@@ -45,7 +45,7 @@ add_custom_command(
 )
 
 # Define the executable
-add_executable(${PROJECT_NAME} main.cpp "${GENERATED_HEADER}")
+add_executable(${PROJECT_NAME} main.cpp "${GENERATED_HEADER}" "app.manifest")
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VS_WINRT_COMPONENT TRUE
     WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -106,3 +106,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # Copy necessary DLLs or assets if needed (Placeholder)
 # winapp pack will handle packaging, but for local debugging we might need things in place.
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/appxmanifest.xml"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/AppxManifest.xml"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${WINMD_FILE}"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Calculator.winmd"
+    COMMENT "Copying AppxManifest.xml, Assets, and WinMD to output directory"
+)
