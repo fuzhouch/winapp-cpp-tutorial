@@ -37,13 +37,13 @@ add_custom_command(
 # hardcode the header path, which causes compilation failure.
 # REF:
 # - https://github.com/microsoft/WindowsAppSDK/issues/3035
-# - https://github.com/microsoft/cppwinrt/issues/1236 
+# - https://github.com/microsoft/cppwinrt/issues/1236
 add_custom_command(
-    OUTPUT "${CPPWINRT_GENERATED_MODULE_CPP}" "${CPPWINRT_GENERATED_COMPONENT_CPP}"
-    COMMAND "${CPPWINRT_EXE}" 
-            -input "${WINMD_FILE}" 
+    OUTPUT "${CPPWINRT_GENERATED_MODULE_CPP}"
+    COMMAND "${CPPWINRT_EXE}"
+            -input "${WINMD_FILE}"
             -output "${GENERATED_FILES_DIR}"
-            -pch "."
+            -pch pch.h
             -component
             -optimize
             -name ${COMPONENT_NAME}
@@ -52,19 +52,19 @@ add_custom_command(
     COMMENT "Generating C++/WinRT files from WinMD"
 )
 
-# Collect all generated source files
-file(GLOB_RECURSE GENERATED_SOURCES
-    "${GENERATED_FILES_DIR}/*.cpp"
-    "${GENERATED_FILES_DIR}/*.h"
-    )
-
 # Create the WinRT component as a shared library
 add_library(${COMPONENT_NAME} SHARED
-    ${GENERATED_SOURCES}
+    "pch.h"
+    "pch.cpp"
     "${IDL_FILE}"
     "${WINMD_FILE}"
+    ${CPPWINRT_GENERATED_MODULE_CPP}
     Calculator.cpp
+    Calculator.def
 )
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+set_target_properties(${COMPONENT_NAME} PROPERTIES VS_WINRT_COMPONENT TRUE)
 
 # Add custom target to ensure generation happens
 add_custom_target(GenerateCalculatorFiles
@@ -80,10 +80,14 @@ set_target_properties(${COMPONENT_NAME} PROPERTIES
     VS_WINRT_COMPONENT TRUE
 )
 
+# Set up precompiled headers
+target_precompile_headers(${COMPONENT_NAME} PRIVATE "pch.h")
+
 # Include directories
 target_include_directories(${COMPONENT_NAME} PRIVATE
     "${GENERATED_FILES_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${WINAPP_PACKAGES_ROOT}/Microsoft.Windows.CppWinRT.${CPPWINRT_VERSION}/include"
 )
 
 # Link against required libraries
@@ -95,4 +99,6 @@ target_link_libraries(${COMPONENT_NAME} PRIVATE
 set_target_properties(${COMPONENT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

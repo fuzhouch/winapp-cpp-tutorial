@@ -2,15 +2,16 @@ cmake_minimum_required(VERSION 3.20)
 
 project(winapp-cpp-tutorial LANGUAGES CXX)
 
+# Set binary and PDB output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
 # Configure C++ Standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add component subdirectories
 add_subdirectory(component/calculator)
-
-# Define the executable
-add_executable(${PROJECT_NAME} main.cpp)
 
 # -----------------------------------------------------------------------------
 # WinApp / Windows App SDK Setup
@@ -22,9 +23,39 @@ if(NOT EXISTS "${WINAPP_ROOT}")
     message(WARNING "WinApp folder not found at ${WINAPP_ROOT}. Please run 'winapp init .'")
 endif()
 
-# Setup Include Paths
+# To consume Calculator component, let's generate
+# projection from calculator.winmd.
+# Setup winapp package paths
+set(WINAPP_PACKAGES_ROOT "$ENV{UserProfile}/.winapp/packages")
+set(CPPWINRT_VERSION "2.0.250303.1")
+set(SDK_CPP_VERSION "10.0.26100.7705")
+file(TO_NATIVE_PATH "${WINAPP_PACKAGES_ROOT}/Microsoft.Windows.SDK.CPP.${SDK_CPP_VERSION}/c/References/10.0.26100.0" WINRT_METADATA_DIR)
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/GeneratedFiles" GENERATED_FILES_DIR)
+file(TO_NATIVE_PATH "${GENERATED_FILES_DIR}/winrt/WinAppTutorial.h" GENERATED_HEADER)
+file(TO_NATIVE_PATH "${WINAPP_PACKAGES_ROOT}/Microsoft.Windows.CppWinRT.${CPPWINRT_VERSION}/bin/cppwinrt.exe" CPPWINRT_EXE)
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/component/calculator/Calculator.winmd" WINMD_FILE)
+add_custom_command(
+    OUTPUT "${GENERATED_HEADER}"
+    COMMAND "${CPPWINRT_EXE}"
+            -input "${WINMD_FILE}"
+            -output "${GENERATED_FILES_DIR}"
+            -reference "${WINRT_METADATA_DIR}\\Windows.Foundation.FoundationContract.winmd"
+    DEPENDS "${WINMD_FILE}"
+    COMMENT "Generating C++/WinRT files from WinMD - Calculator"
+)
+
+# Define the executable
+add_executable(${PROJECT_NAME} main.cpp "${GENERATED_HEADER}")
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VS_WINRT_COMPONENT TRUE
+    WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+
+# Add dependency on Calculator to ensure WinRT files are generated before main compilation
+add_dependencies(${PROJECT_NAME} Calculator)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
     "${WINAPP_ROOT}/include"
+    "${GENERATED_FILES_DIR}"
 )
 
 # Setup Library Paths
@@ -38,14 +69,16 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$" OR
        CMAKE_GENERATOR_PLATFORM STREQUAL "ARM64")
     set(WINAPP_LIB_DIR "${WINAPP_ROOT}/lib/arm64")
 else()
-    # Default to amd64 for x64/AMD64 and unknown architectures
+    # Default to x86 for x64/AMD64 and unknown architectures (for now to match build target)
     set(WINAPP_LIB_DIR "${WINAPP_ROOT}/lib/x64")
     if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|x64)$")
-        message(STATUS "Unknown architecture ${CMAKE_SYSTEM_PROCESSOR}, defaulting to amd64")
+        message(STATUS "Unknown architecture ${CMAKE_SYSTEM_PROCESSOR}, defaulting to x64 anyway")
     endif()
 endif()
 
 target_link_directories(${PROJECT_NAME} PRIVATE "${WINAPP_LIB_DIR}")
+target_link_options(${PROJECT_NAME} PRIVATE /WINMD)
+set_target_properties(${PROJECT_NAME} PROPERTIES VS_WINRT_REFERENCES "${CMAKE_CURRENT_BINARY_DIR}/component/calculator/Calculator.winmd")
 
 # MSVC Compiler Options for Modern Windows Apps / C++/WinRT
 if(MSVC)
@@ -56,7 +89,6 @@ if(MSVC)
         /EHsc
         /bigobj
     )
-
     # Optional: If you want to use precompiled headers for faster builds later
     # target_precompile_headers(${PROJECT_NAME} PRIVATE "${WINAPP_ROOT}/include/winrt/Windows.Foundation.h")
 else()
@@ -68,13 +100,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     # Windows App SDK Bootstrap (for unpackaged apps or dynamic dependency)
     Microsoft.WindowsAppRuntime.Bootstrap
     Microsoft.WindowsAppRuntime
-
-    # WinRT Components
-    # AdderComponent
-
-    # Standard Windows Libraries if needed
-    kernel32
-    user32
+    RuntimeObject # See: https://github.com/microsoft/vcpkg/issues/15339
+    Calculator
 )
 
 # Copy necessary DLLs or assets if needed (Placeholder)

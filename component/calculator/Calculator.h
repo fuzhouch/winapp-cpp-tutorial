@@ -1,4 +1,5 @@
 #pragma once
+#include "pch.h"
 #include "WinAppTutorial/Calculator.g.h"
 
 namespace winrt::WinAppTutorial::implementation
