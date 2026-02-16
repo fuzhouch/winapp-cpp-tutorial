@@ -64,7 +64,6 @@ add_library(${COMPONENT_NAME} SHARED
 )
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-set_target_properties(${COMPONENT_NAME} PROPERTIES VS_WINRT_COMPONENT TRUE)
 
 # Add custom target to ensure generation happens
 add_custom_target(GenerateCalculatorFiles
