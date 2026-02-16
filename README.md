@@ -25,6 +25,37 @@ Learn how to develop Windows app with winappCLI and vibe coding!
 
 2. Build with CMake:
    ```powershell
-   cmake -S . -B build
-   cmake --build build
+   cmake -S . -B build # This is the default settings with VS 2022, or...
+   cmake -G "NMake Makefiles" -B build # Or, you can use nmake for building.
+
+   cmake --build build --config Release
    ```
+
+## Configure App Package
+
+### Package Layout
+
+After building the project, the output directory (`build/bin`) contains the following structure, which adheres to the required package layout for Windows apps:
+
+```text
+build/bin/
+├── winapp-cpp-tutorial.exe   # Main executable
+├── Calculator.dll            # WinRT Component
+├── Calculator.winmd          # Windows Metadata for the component
+├── AppxManifest.xml          # Package manifest (copied from appxmanifest.xml)
+└── Assets/                   # Image assets
+```
+
+### Registration-Free WinRT Activation
+
+To allow the executable to load the custom WinRT component (`Calculator.dll`) without installing it via MSIX (Side-loading), we use a **Side-by-Side Manifest** (`app.manifest`).
+
+*   **`app.manifest`**: This file contains a `<file>` element with an `<activatableClass>` tag. It tells the OS that `WinAppTutorial.Calculator` is implemented in `Calculator.dll`.
+*   **Compilation**: CMake is configured to embed `app.manifest` into `winapp-cpp-tutorial.exe` as a resource (RT_MANIFEST). This means you do not need to distribute `app.manifest` separately; it is part of the binary.
+
+### MSIX Packaging (`appxmanifest.xml`)
+
+The `appxmanifest.xml` file is used when packaging the app as an MSIX bundle.
+
+*   **In-Process Server Limitation**: Standard `appxmanifest.xml` validation for Packaged Classic Apps (`runFullTrust`) often rejects `windows.activatableClass.inProcessServer` extensions.
+*   **Solution**: By using the embedded `app.manifest` (Reg-Free WinRT), the application handles component activation internally, bypassing the need to declare the ActivatableClass in `appxmanifest.xml` for the desktop bridge scenario.
