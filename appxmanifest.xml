@@ -52,17 +52,7 @@
             >
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
       </uap:VisualElements>
-      <Extensions>
-        <Extension Category="windows.activatableClass.inProcessServer">
-          <InProcessServer>
-            <Path>Calculator.dll</Path>
-            <ActivatableClass
-                            ActivatableClassId="WinAppTutorial.Calculator"
-                            ThreadingModel="both"
-                        />
-          </InProcessServer>
-        </Extension>
-      </Extensions>
+
     </Application>
   </Applications>
 
